@@ -2,6 +2,7 @@ const MODULE_ID = "standee-portrait";
 
 const DEFAULT_CONFIG = {
   enabled: false,
+  displayMode: "inside", // "inside" | "outside"
   panelWidth: 220,
   portraitImg: null,
   flagImg: null,
@@ -77,6 +78,13 @@ function buildSettingsHTML(cfg) {
   return `
   <div class="sp-settings-box">
     <div class="sp-field">
+      <label>${L("SP.DisplayMode")}</label>
+      <div class="sp-row">
+        <button type="button" class="sp-mini sp-mode-inside${cfg.displayMode !== "outside" ? " active" : ""}">${L("SP.DisplayInside")}</button>
+        <button type="button" class="sp-mini sp-mode-outside${cfg.displayMode === "outside" ? " active" : ""}">${L("SP.DisplayOutside")}</button>
+      </div>
+    </div>
+    <div class="sp-field">
       <label>${L("SP.PortraitImage")}</label>
       <div class="sp-row">
         <button type="button" class="sp-mini sp-pick-portrait">${L("SP.Choose")}</button>
@@ -150,19 +158,42 @@ const LIVE_MAP = {
   flagOpacity: { sel: ".sp-flag-frame img", prop: "--sp-f-opacity", fmt: (v) => v }
 };
 
-// Cheap, drag-friendly preview: only touches CSS (panel width + the padding that reserves
-// its space), never the real Application frame. Used on every "input" tick while dragging.
-function previewPanelWidth(windowContent, panel, width) {
-  if (panel) panel.style.setProperty("--sp-panel-width", `${width}px`);
-  windowContent.style.paddingLeft = `${width}px`;
+// Keeps a floating "outside" panel glued to its window: recomputed on every render and also
+// whenever the window moves, resizes, or gets focus (see the setPosition/bringToTop patches
+// below), since dragging a window doesn't re-render its sheet at all.
+function repositionOutsidePanel(app) {
+  const panel = app._spOutsidePanel;
+  if (!panel || !panel.isConnected) return;
+  const appEl = app.element instanceof HTMLElement ? app.element : app.element?.[0];
+  if (!appEl) return;
+  const rect = appEl.getBoundingClientRect();
+  const width = parseFloat(panel.style.getPropertyValue("--sp-panel-width")) || 220;
+  panel.style.left = `${rect.left - width}px`;
+  panel.style.top = `${rect.top}px`;
+  panel.style.height = `${rect.height}px`;
+  const z = getComputedStyle(appEl).zIndex;
+  panel.style.zIndex = z && z !== "auto" ? z : "100";
 }
 
-// Commits the real Application resize. Only called on full render and when a drag ends
-// ("change"), never on every "input" tick — resizing the actual window on every tick is what
-// caused the visible jitter, since the settings box itself lives inside that same window.
+// Cheap, drag-friendly preview: only touches CSS (panel width + whatever reserves/repositions
+// its space), never the real Application frame. Used on every "input" tick while dragging.
+function previewPanelWidth(app, windowContent, panel, width, outsideMode) {
+  if (panel) panel.style.setProperty("--sp-panel-width", `${width}px`);
+  if (outsideMode) {
+    repositionOutsidePanel(app);
+  } else {
+    windowContent.style.paddingLeft = `${width}px`;
+  }
+}
+
+// Commits the real Application resize ("inside" mode only — "outside" never touches the
+// window's own size). Only called on full render and when a drag ends ("change"), never on
+// every "input" tick — resizing the actual window on every tick is what caused the jitter,
+// since the settings box itself lives inside that same window.
 function applyWidth(app, windowContent, panel, cfg) {
+  const outsideMode = cfg.displayMode === "outside";
+  const desired = cfg.enabled && !outsideMode ? cfg.panelWidth : 0;
   app._sp ??= { originalWidth: app.position.width, appliedWidth: 0 };
-  const desired = cfg.enabled ? cfg.panelWidth : 0;
   if (app._sp.appliedWidth !== desired) {
     const base = app.position.width - app._sp.appliedWidth;
     app._sp.appliedWidth = desired;
@@ -170,6 +201,7 @@ function applyWidth(app, windowContent, panel, cfg) {
   }
   windowContent.style.paddingLeft = desired ? `${desired}px` : "";
   if (panel) panel.style.setProperty("--sp-panel-width", `${cfg.panelWidth}px`);
+  if (outsideMode) repositionOutsidePanel(app);
 }
 
 function attachListeners(app, actor, windowContent, tab, panel, cfg) {
@@ -183,6 +215,12 @@ function attachListeners(app, actor, windowContent, tab, panel, cfg) {
   const gearBtn = panel.querySelector(".sp-gear");
   const box = panel.querySelector(".sp-settings-box");
   if (gearBtn && box) gearBtn.onclick = () => box.classList.toggle("open");
+
+  const modeInsideBtn = panel.querySelector(".sp-mode-inside");
+  if (modeInsideBtn) modeInsideBtn.onclick = () => setConfig(actor, { displayMode: "inside" });
+
+  const modeOutsideBtn = panel.querySelector(".sp-mode-outside");
+  if (modeOutsideBtn) modeOutsideBtn.onclick = () => setConfig(actor, { displayMode: "outside" });
 
   const pickPortraitBtn = panel.querySelector(".sp-pick-portrait");
   if (pickPortraitBtn) {
@@ -206,7 +244,7 @@ function attachListeners(app, actor, windowContent, tab, panel, cfg) {
       if (input.dataset.pct) value = value / 100;
 
       if (key === "panelWidth") {
-        previewPanelWidth(windowContent, panel, value);
+        previewPanelWidth(app, windowContent, panel, value, cfg.displayMode === "outside");
       } else {
         const target = panel.querySelector(LIVE_MAP[key].sel);
         if (target) target.style.setProperty(LIVE_MAP[key].prop, LIVE_MAP[key].fmt(value));
@@ -235,25 +273,36 @@ function extractWindowContent(el) {
 function onRenderActorSheet(app, actor, windowContent) {
   const cfg = getConfig(actor);
   const editable = !!app.isEditable;
+  const outsideMode = cfg.displayMode === "outside";
 
   windowContent.style.position = "relative";
-  windowContent.classList.toggle("sp-active", cfg.enabled);
+  windowContent.classList.toggle("sp-active", cfg.enabled && !outsideMode);
 
   windowContent.querySelector(":scope > .sp-standee-panel")?.remove();
   windowContent.querySelector(":scope > .sp-standee-tab")?.remove();
+  app._spOutsidePanel?.remove();
+  app._spOutsidePanel = null;
 
   let tab = null;
   let panel = null;
 
   if (cfg.enabled) {
     panel = document.createElement("div");
-    panel.className = "sp-standee-panel";
+    panel.className = outsideMode ? "sp-standee-panel sp-standee-outside" : "sp-standee-panel";
     panel.innerHTML = buildPanelHTML(actor, cfg, editable);
     applyVars(panel, cssVars(cfg).panel);
     applyVars(panel.querySelector(".sp-portrait-frame img"), cssVars(cfg).portrait);
     const flagImg = panel.querySelector(".sp-flag-frame img");
     if (flagImg) applyVars(flagImg, cssVars(cfg).flag);
-    windowContent.prepend(panel);
+
+    if (outsideMode) {
+      // Outside the window entirely, so it's not clipped by / drawn on the sheet's own
+      // background — appended to <body> and kept glued to the window via repositionOutsidePanel.
+      document.body.appendChild(panel);
+      app._spOutsidePanel = panel;
+    } else {
+      windowContent.prepend(panel);
+    }
   } else {
     tab = document.createElement("div");
     tab.className = "sp-standee-tab";
@@ -309,4 +358,43 @@ function patchSheetRendering() {
   }
 }
 
-Hooks.once("init", patchSheetRendering);
+// Runs `after(app)` right after `method` on `cls.prototype`, for apps that have an active
+// "outside" floating panel (cheap no-op for everything else — this fires on every window
+// move/focus/close in the whole game, so it must stay fast for the common case).
+function wrapMethod(cls, method, after) {
+  const original = cls?.prototype?.[method];
+  if (typeof original !== "function") return;
+  cls.prototype[method] = function (...args) {
+    const result = original.apply(this, args);
+    if (this._spOutsidePanel) {
+      try {
+        after(this);
+      } catch (err) {
+        console.error(`${MODULE_ID} | Error en ${cls.name}.${method}`, err);
+      }
+    }
+    return result;
+  };
+}
+
+function removeOutsidePanel(app) {
+  app._spOutsidePanel?.remove();
+  app._spOutsidePanel = null;
+}
+
+function patchWindowTracking() {
+  const AppV2 = foundry.applications?.api?.ApplicationV2;
+  // Dragging or resizing a window doesn't re-render its sheet (no document change involved),
+  // so the floating panel needs to be re-synced on these too, not just on our render hooks.
+  wrapMethod(Application, "setPosition", repositionOutsidePanel);
+  wrapMethod(Application, "bringToTop", repositionOutsidePanel);
+  wrapMethod(Application, "close", removeOutsidePanel);
+  wrapMethod(AppV2, "setPosition", repositionOutsidePanel);
+  wrapMethod(AppV2, "bringToFront", repositionOutsidePanel);
+  wrapMethod(AppV2, "close", removeOutsidePanel);
+}
+
+Hooks.once("init", () => {
+  patchSheetRendering();
+  patchWindowTracking();
+});

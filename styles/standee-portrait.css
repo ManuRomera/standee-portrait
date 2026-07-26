@@ -37,6 +37,14 @@
   pointer-events: none;
 }
 
+/* "Outside" mode: appended to <body>, not .window-content, so it isn't affected by the
+   sheet's own background/skin at all. left/top/height are set from JS (repositionOutsidePanel),
+   kept in sync with the window's actual position. */
+.sp-standee-outside {
+  position: fixed;
+  bottom: auto;
+}
+
 .sp-flag-frame,
 .sp-portrait-frame {
   position: absolute;
@@ -62,7 +70,10 @@
 }
 
 .sp-flag-frame img {
-  object-fit: cover;
+  /* contain, not cover: cropping a banner/flag image to fill a hard rectangle is exactly what
+     reads as "a framed box" — this keeps the artwork's own silhouette (e.g. a tapered banner
+     shape) instead of forcing it into a rectangle. */
+  object-fit: contain;
   opacity: var(--sp-f-opacity, 1);
   transform-origin: center;
   transform: translate(var(--sp-x, 0%), var(--sp-y, 0%)) scale(var(--sp-scale, 1));
@@ -164,4 +175,9 @@
 
 .sp-mini:hover {
   background: rgba(255, 255, 255, 0.2);
+}
+
+.sp-mini.active {
+  background: rgba(255, 212, 121, 0.35);
+  border-color: rgba(255, 212, 121, 0.7);
 }

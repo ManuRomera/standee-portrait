@@ -18,7 +18,7 @@ Luego actívalo en el mundo desde **Gestionar módulos**.
 
 ## Importante: qué imagen usar
 
-El retrato se muestra con `object-fit: contain` sobre fondo **transparente** (no hay caja ni marco detrás). Esto significa que el resultado solo se ve "recortado y orgánico" si la imagen del personaje ya tiene el fondo transparente (PNG con alpha), como suele pasar con el arte de token. Si usas un retrato rectangular normal (una ilustración con fondo sólido), verás ese rectángulo completo flotando sobre la ficha — el módulo no recorta el sujeto automáticamente, solo respeta la transparencia que ya tenga el archivo.
+Tanto el retrato como la bandera se muestran con `object-fit: contain` sobre fondo **transparente** (no hay caja, marco ni recorte forzado a rectángulo). Esto significa que el resultado solo se ve "recortado y orgánico" si la imagen ya tiene el fondo transparente (PNG con alpha), como suele pasar con el arte de token o con banderas/pendones ilustrados con su propia silueta. Si usas una imagen rectangular normal (una ilustración con fondo sólido), verás ese rectángulo completo — el módulo no recorta el sujeto automáticamente, solo respeta la transparencia que ya tenga el archivo.
 
 ## Cómo funciona
 
@@ -28,6 +28,7 @@ En cada ficha de actor aparece una pequeña pestaña con un icono de bandera peg
    - la **bandera de fondo** (una imagen a pantalla completa del panel, en la capa de atrás), si la has puesto,
    - la **imagen del standee** recortada a cuerpo entero encima, con fondo transparente si la imagen lo permite.
 2. Un botón de **engranaje** (⚙) abre el panel de ajustes, con:
+   - **Posición**: "Dentro de la ficha" (por defecto) integra el panel en la propia ventana, ensanchándola. "Fuera, al lado" saca el panel de la ventana por completo — flota junto a ella, sigue a la ficha si la mueves, y no se ve afectado por el fondo/skin propio de esa hoja. Es el equivalente a cómo funciona en el sistema original.
    - **Imagen del standee**: "Elegir imagen" para usar una imagen distinta a la del retrato del personaje, "Usar el retrato del personaje" para volver a mostrar `actor.img`. Este ajuste **no modifica** el retrato real del actor — ambas imágenes se conservan por separado; por defecto el standee usa el retrato del personaje, y si eliges otra, se muestra esa.
    - **Bandera de fondo**: "Elegir imagen" / "Quitar" para gestionar la imagen de fondo.
    - Controles deslizantes para **ancho del panel**, **zoom y posición del standee**, y **zoom, posición y opacidad de la bandera**.
