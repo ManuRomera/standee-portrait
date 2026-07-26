@@ -4,6 +4,8 @@ const DEFAULT_CONFIG = {
   enabled: false,
   displayMode: "inside", // "inside" | "outside"
   panelWidth: 220,
+  controlX: null,
+  controlY: null,
   portraitImg: null,
   flagImg: null,
   flagScale: 1,
@@ -127,8 +129,10 @@ function buildSettingsHTML(cfg) {
   </div>`;
 }
 
-function buildPanelHTML(actor, cfg, editable) {
-  const L = (k) => game.i18n.localize(k);
+// Pure art, no buttons on top of it at all — the whole point of "outside" mode is a clean
+// image next to the sheet; controls live in the hub instead (see buildHubHTML), always inside
+// the window.
+function buildPanelHTML(actor, cfg) {
   const portraitSrc = cfg.portraitImg || actor.img;
   return `
   <div class="sp-flag-frame">
@@ -136,12 +140,23 @@ function buildPanelHTML(actor, cfg, editable) {
   </div>
   <div class="sp-portrait-frame">
     <img src="${portraitSrc}">
-  </div>
-  <div class="sp-toolbar">
-    <button type="button" class="sp-btn sp-toggle" title="${L("SP.ToggleOff")}"><i class="fa-solid fa-xmark"></i></button>
-    ${editable ? `<button type="button" class="sp-btn sp-gear" title="${L("SP.Settings")}"><i class="fa-solid fa-sliders"></i></button>` : ""}
-  </div>
-  ${editable ? buildSettingsHTML(cfg) : ""}`;
+  </div>`;
+}
+
+// Small, always-inside-the-window control cluster: one button when off (enable), a second
+// (gear) appears once enabled. Right-click-drag anywhere to relocate it (see attachDrag).
+function buildHubHTML(cfg, editable) {
+  const L = (k) => game.i18n.localize(k);
+  return `
+  <button type="button" class="sp-btn sp-toggle" title="${cfg.enabled ? L("SP.ToggleOff") : L("SP.ToggleOn")}">
+    <i class="fa-solid fa-flag"></i>
+  </button>
+  ${
+    cfg.enabled && editable
+      ? `<button type="button" class="sp-btn sp-gear" title="${L("SP.Settings")}"><i class="fa-solid fa-sliders"></i></button>`
+      : ""
+  }
+  ${cfg.enabled && editable ? buildSettingsHTML(cfg) : ""}`;
 }
 
 /* -------------------------------------------- */
@@ -204,40 +219,71 @@ function applyWidth(app, windowContent, panel, cfg) {
   if (outsideMode) repositionOutsidePanel(app);
 }
 
-function attachListeners(app, actor, windowContent, tab, panel, cfg) {
-  if (tab) tab.onclick = () => setConfig(actor, { enabled: !cfg.enabled });
+// Right-click-and-hold anywhere on the hub to relocate it inside the window. Left-click still
+// reaches the buttons normally since this only engages for button 2 (right button).
+function attachDrag(hub, actor, windowContent) {
+  hub.addEventListener("contextmenu", (ev) => ev.preventDefault());
+  hub.addEventListener("pointerdown", (ev) => {
+    if (ev.button !== 2) return;
+    ev.preventDefault();
+    const startX = ev.clientX;
+    const startY = ev.clientY;
+    const startLeft = hub.offsetLeft;
+    const startTop = hub.offsetTop;
+    hub.classList.add("dragging");
 
-  if (!panel) return;
+    const onMove = (moveEv) => {
+      hub.style.left = `${startLeft + (moveEv.clientX - startX)}px`;
+      hub.style.top = `${startTop + (moveEv.clientY - startY)}px`;
+    };
+    const onUp = () => {
+      document.removeEventListener("pointermove", onMove);
+      document.removeEventListener("pointerup", onUp);
+      hub.classList.remove("dragging");
+      setConfig(actor, { controlX: hub.offsetLeft, controlY: hub.offsetTop });
+    };
+    document.addEventListener("pointermove", onMove);
+    document.addEventListener("pointerup", onUp);
+  });
+}
 
-  const toggleBtn = panel.querySelector(".sp-toggle");
-  if (toggleBtn) toggleBtn.onclick = () => setConfig(actor, { enabled: false });
+function attachListeners(app, actor, windowContent, hub, panel, cfg) {
+  const toggleBtn = hub.querySelector(".sp-toggle");
+  if (toggleBtn) toggleBtn.onclick = () => setConfig(actor, { enabled: !cfg.enabled });
 
-  const gearBtn = panel.querySelector(".sp-gear");
-  const box = panel.querySelector(".sp-settings-box");
+  attachDrag(hub, actor, windowContent);
+
+  if (!cfg.enabled || !app.isEditable) return;
+
+  const gearBtn = hub.querySelector(".sp-gear");
+  const box = hub.querySelector(".sp-settings-box");
   if (gearBtn && box) gearBtn.onclick = () => box.classList.toggle("open");
 
-  const modeInsideBtn = panel.querySelector(".sp-mode-inside");
+  const modeInsideBtn = hub.querySelector(".sp-mode-inside");
   if (modeInsideBtn) modeInsideBtn.onclick = () => setConfig(actor, { displayMode: "inside" });
 
-  const modeOutsideBtn = panel.querySelector(".sp-mode-outside");
+  const modeOutsideBtn = hub.querySelector(".sp-mode-outside");
   if (modeOutsideBtn) modeOutsideBtn.onclick = () => setConfig(actor, { displayMode: "outside" });
 
-  const pickPortraitBtn = panel.querySelector(".sp-pick-portrait");
+  const pickPortraitBtn = hub.querySelector(".sp-pick-portrait");
   if (pickPortraitBtn) {
     pickPortraitBtn.onclick = () =>
       pickImage(cfg.portraitImg || actor.img, (path) => setConfig(actor, { portraitImg: path }));
   }
 
-  const clearPortraitBtn = panel.querySelector(".sp-clear-portrait");
+  const clearPortraitBtn = hub.querySelector(".sp-clear-portrait");
   if (clearPortraitBtn) clearPortraitBtn.onclick = () => setConfig(actor, { portraitImg: null });
 
-  const pickFlagBtn = panel.querySelector(".sp-pick-flag");
+  const pickFlagBtn = hub.querySelector(".sp-pick-flag");
   if (pickFlagBtn) pickFlagBtn.onclick = () => pickImage(cfg.flagImg, (path) => setConfig(actor, { flagImg: path }));
 
-  const clearFlagBtn = panel.querySelector(".sp-clear-flag");
+  const clearFlagBtn = hub.querySelector(".sp-clear-flag");
   if (clearFlagBtn) clearFlagBtn.onclick = () => setConfig(actor, { flagImg: null });
 
-  panel.querySelectorAll(".sp-settings-box input[type=range]").forEach((input) => {
+  // These read their target images from `panel` (the floating art), which is a *different*
+  // element from `hub` (the settings box's own container) — in "outside" mode panel isn't even
+  // inside the same window, so the hub's own position can never be perturbed by this.
+  hub.querySelectorAll(".sp-settings-box input[type=range]").forEach((input) => {
     input.addEventListener("input", () => {
       const key = input.dataset.cfg;
       let value = Number(input.value);
@@ -276,20 +322,26 @@ function onRenderActorSheet(app, actor, windowContent) {
   const outsideMode = cfg.displayMode === "outside";
 
   windowContent.style.position = "relative";
-  windowContent.classList.toggle("sp-active", cfg.enabled && !outsideMode);
 
   windowContent.querySelector(":scope > .sp-standee-panel")?.remove();
-  windowContent.querySelector(":scope > .sp-standee-tab")?.remove();
+  windowContent.querySelector(":scope > .sp-hub")?.remove();
   app._spOutsidePanel?.remove();
   app._spOutsidePanel = null;
 
-  let tab = null;
-  let panel = null;
+  // The hub (buttons + settings) always lives inside the window, regardless of enabled state
+  // or display mode — it never sits on top of the floating art.
+  const hub = document.createElement("div");
+  hub.className = "sp-hub";
+  hub.innerHTML = buildHubHTML(cfg, editable);
+  if (cfg.controlX != null) hub.style.left = `${cfg.controlX}px`;
+  if (cfg.controlY != null) hub.style.top = `${cfg.controlY}px`;
+  windowContent.prepend(hub);
 
+  let panel = null;
   if (cfg.enabled) {
     panel = document.createElement("div");
     panel.className = outsideMode ? "sp-standee-panel sp-standee-outside" : "sp-standee-panel";
-    panel.innerHTML = buildPanelHTML(actor, cfg, editable);
+    panel.innerHTML = buildPanelHTML(actor, cfg);
     applyVars(panel, cssVars(cfg).panel);
     applyVars(panel.querySelector(".sp-portrait-frame img"), cssVars(cfg).portrait);
     const flagImg = panel.querySelector(".sp-flag-frame img");
@@ -303,16 +355,10 @@ function onRenderActorSheet(app, actor, windowContent) {
     } else {
       windowContent.prepend(panel);
     }
-  } else {
-    tab = document.createElement("div");
-    tab.className = "sp-standee-tab";
-    tab.innerHTML = `<i class="fa-solid fa-flag"></i>`;
-    tab.title = game.i18n.localize("SP.ToggleOn");
-    windowContent.prepend(tab);
   }
 
   applyWidth(app, windowContent, panel, cfg);
-  attachListeners(app, actor, windowContent, tab, panel, cfg);
+  attachListeners(app, actor, windowContent, hub, panel, cfg);
 }
 
 // Foundry lets any Application subclass declare its own `baseApplication` /

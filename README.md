@@ -22,17 +22,17 @@ Tanto el retrato como la bandera se muestran con `object-fit: contain` sobre fon
 
 ## Cómo funciona
 
-En cada ficha de actor aparece una pequeña pestaña con un icono de bandera pegada al borde izquierdo de la ventana.
+En cada ficha de actor aparece un pequeño grupo de botones (el "hub") dentro de la ventana, cerca de la esquina superior izquierda por defecto. Estos controles **viven siempre dentro de la ficha** — nunca se dibujan sobre la imagen del personaje, para no romper la estética de un standee limpio.
 
-1. **Pulsa la pestaña** para activar el modo standee. La ficha se ensancha y aparece un panel lateral con:
-   - la **bandera de fondo** (una imagen a pantalla completa del panel, en la capa de atrás), si la has puesto,
-   - la **imagen del standee** recortada a cuerpo entero encima, con fondo transparente si la imagen lo permite.
-2. Un botón de **engranaje** (⚙) abre el panel de ajustes, con:
-   - **Posición**: "Dentro de la ficha" (por defecto) integra el panel en la propia ventana, ensanchándola. "Fuera, al lado" saca el panel de la ventana por completo — flota junto a ella, sigue a la ficha si la mueves, y no se ve afectado por el fondo/skin propio de esa hoja. Es el equivalente a cómo funciona en el sistema original.
-   - **Imagen del standee**: "Elegir imagen" para usar una imagen distinta a la del retrato del personaje, "Usar el retrato del personaje" para volver a mostrar `actor.img`. Este ajuste **no modifica** el retrato real del actor — ambas imágenes se conservan por separado; por defecto el standee usa el retrato del personaje, y si eliges otra, se muestra esa.
-   - **Bandera de fondo**: "Elegir imagen" / "Quitar" para gestionar la imagen de fondo.
-   - Controles deslizantes para **ancho del panel**, **zoom y posición del standee**, y **zoom, posición y opacidad de la bandera**.
-3. El botón **✕** de la esquina superior del panel vuelve al retrato normal (modo *framed*).
+- **Arrástralo con el botón derecho del ratón** (mantén pulsado y mueve) a cualquier sitio dentro de la ficha donde no moleste. La posición se guarda por personaje.
+- El icono de **bandera** activa/desactiva el modo standee.
+- Una vez activo aparece un icono de **engranaje** (⚙) que abre el panel de ajustes:
+  - **Posición**: "Dentro de la ficha" (por defecto) integra la imagen en la propia ventana, ensanchándola. "Fuera, al lado" saca la imagen de la ventana por completo — flota junto a ella, sigue a la ficha si la mueves, y no se ve afectado por el fondo/skin propio de esa hoja. Es el equivalente a cómo funciona en el sistema original.
+  - **Imagen del standee**: "Elegir imagen" para usar una imagen distinta a la del retrato del personaje, "Usar el retrato del personaje" para volver a mostrar `actor.img`. Este ajuste **no modifica** el retrato real del actor — ambas imágenes se conservan por separado; por defecto el standee usa el retrato del personaje, y si eliges otra, se muestra esa.
+  - **Bandera de fondo**: "Elegir imagen" / "Quitar" para gestionar la imagen de fondo.
+  - Controles deslizantes para **ancho del panel**, **zoom y posición del standee**, y **zoom, posición y opacidad de la bandera**.
+
+La imagen en sí (retrato + bandera) no tiene ningún botón encima: es solo el arte, tal como pide un standee limpio.
 
 Todos los ajustes se guardan como flags del propio actor (`flags.standee-portrait.config`), así que son independientes por personaje y persisten entre sesiones. Los jugadores sin permisos de edición ven el resultado, pero solo el propietario (o el GM) puede modificarlo.
 
