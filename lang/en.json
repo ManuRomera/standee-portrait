@@ -1,0 +1,17 @@
+{
+  "SP.ToggleOn": "Enable standee portrait",
+  "SP.ToggleOff": "Back to normal portrait",
+  "SP.Settings": "Settings",
+  "SP.EditPortrait": "Change portrait",
+  "SP.Flag": "Background flag",
+  "SP.Choose": "Choose image",
+  "SP.Clear": "Clear",
+  "SP.PanelWidth": "Panel width",
+  "SP.PortraitScale": "Portrait zoom",
+  "SP.PortraitX": "Portrait — horizontal",
+  "SP.PortraitY": "Portrait — vertical",
+  "SP.FlagScale": "Flag zoom",
+  "SP.FlagX": "Flag — horizontal",
+  "SP.FlagY": "Flag — vertical",
+  "SP.FlagOpacity": "Flag opacity"
+}

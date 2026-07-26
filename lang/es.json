@@ -1,0 +1,17 @@
+{
+  "SP.ToggleOn": "Activar figura recortada",
+  "SP.ToggleOff": "Volver al retrato normal",
+  "SP.Settings": "Ajustes",
+  "SP.EditPortrait": "Cambiar retrato",
+  "SP.Flag": "Bandera de fondo",
+  "SP.Choose": "Elegir imagen",
+  "SP.Clear": "Quitar",
+  "SP.PanelWidth": "Ancho del panel",
+  "SP.PortraitScale": "Zoom del retrato",
+  "SP.PortraitX": "Retrato — horizontal",
+  "SP.PortraitY": "Retrato — vertical",
+  "SP.FlagScale": "Zoom de la bandera",
+  "SP.FlagX": "Bandera — horizontal",
+  "SP.FlagY": "Bandera — vertical",
+  "SP.FlagOpacity": "Opacidad de la bandera"
+}
