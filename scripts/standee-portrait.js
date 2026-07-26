@@ -226,44 +226,13 @@ function attachListeners(app, actor, windowContent, tab, panel, cfg) {
 /* Render hook                                   */
 /* -------------------------------------------- */
 
-function getWindowContent(htmlArg) {
-  const el = htmlArg instanceof HTMLElement ? htmlArg : htmlArg?.[0];
+function extractWindowContent(el) {
   if (!el) return null;
   if (el.classList?.contains("window-content")) return el;
-  // ApplicationV2 hooks pass the outer .application element; window-content is a descendant.
-  const descendant = el.querySelector?.(".window-content");
-  if (descendant) return descendant;
-  // Application V1 hooks pass the inner content, already attached under window-content.
-  return el.closest?.(".window-content") ?? null;
+  return el.querySelector?.(".window-content") ?? null;
 }
 
-function resolveActor(app) {
-  // Covers the vast majority of systems: DocumentSheet(V2) exposes `.document`, classic
-  // ActorSheet exposes `.actor`, and any FormApplication exposes the underlying `.object`.
-  const direct = app.document ?? app.actor ?? app.object;
-  if (direct instanceof Actor) return direct;
-
-  // Some lightweight/indie systems build their sheet without exposing any of the above
-  // (custom Application subclasses). Fall back to Foundry's own reverse index: every
-  // Document registers each Application currently rendering it into `document.apps` by
-  // that app's id, regardless of how the system's sheet class stores the reference.
-  const candidates = [
-    ...game.actors.contents,
-    ...(canvas?.scene?.tokens?.contents.map((t) => t.actor).filter(Boolean) ?? [])
-  ];
-  return candidates.find((a) => a.apps?.[app.appId] === app) ?? null;
-}
-
-function onRenderActorSheet(app, htmlArg) {
-  const actor = resolveActor(app);
-  if (!actor) return;
-
-  const windowContent = getWindowContent(htmlArg);
-  if (!windowContent) {
-    console.warn(`${MODULE_ID} | No se encontró .window-content para la hoja de ${actor.name}; se omite el panel.`);
-    return;
-  }
-
+function onRenderActorSheet(app, actor, windowContent) {
   const cfg = getConfig(actor);
   const editable = !!app.isEditable;
 
@@ -297,15 +266,47 @@ function onRenderActorSheet(app, htmlArg) {
   attachListeners(app, actor, windowContent, tab, panel, cfg);
 }
 
-function safeOnRender(app, htmlArg) {
-  try {
-    onRenderActorSheet(app, htmlArg);
-  } catch (err) {
-    console.error(`${MODULE_ID} | Error al renderizar el panel standee`, err);
+// Foundry lets any Application subclass declare its own `baseApplication` /
+// `BASE_APPLICATION`, which truncates the hook-name chain at that point — a common pattern
+// for systems that want their sheet selectable in the "Configure Sheet" picker. That means a
+// generic `Hooks.on("renderApplication" / "renderApplicationV2", ...)` is NOT guaranteed to
+// fire for every system (it didn't for Mothership, Kult, Mausritter...). Hooks are dispatched
+// by name, on top of the actual render methods — instrumenting those methods directly bypasses
+// that name-based dispatch entirely, so it fires regardless of what any system declares.
+function patchSheetRendering() {
+  if (typeof DocumentSheet !== "undefined") {
+    const originalRenderV1 = DocumentSheet.prototype._render;
+    DocumentSheet.prototype._render = async function (...args) {
+      const result = await originalRenderV1.apply(this, args);
+      try {
+        if (this.object instanceof Actor) {
+          const windowContent = extractWindowContent(this.element?.[0]);
+          if (windowContent) onRenderActorSheet(this, this.object, windowContent);
+        }
+      } catch (err) {
+        console.error(`${MODULE_ID} | Error al renderizar el panel standee (V1)`, err);
+      }
+      return result;
+    };
+  }
+
+  const DocumentSheetV2 = foundry.applications?.api?.DocumentSheetV2;
+  if (DocumentSheetV2) {
+    const originalOnRenderV2 = DocumentSheetV2.prototype._onRender;
+    DocumentSheetV2.prototype._onRender = async function (...args) {
+      const result = await originalOnRenderV2?.apply(this, args);
+      try {
+        const actor = this.document ?? this.object;
+        if (actor instanceof Actor) {
+          const windowContent = extractWindowContent(this.element);
+          if (windowContent) onRenderActorSheet(this, actor, windowContent);
+        }
+      } catch (err) {
+        console.error(`${MODULE_ID} | Error al renderizar el panel standee (V2)`, err);
+      }
+      return result;
+    };
   }
 }
 
-// Universal render hooks: fire for every Application/ApplicationV2 subclass, regardless of
-// which intermediate sheet class a given system's actor sheet actually extends.
-Hooks.on("renderApplication", safeOnRender);
-Hooks.on("renderApplicationV2", safeOnRender);
+Hooks.once("init", patchSheetRendering);
