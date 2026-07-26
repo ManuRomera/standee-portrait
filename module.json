@@ -2,7 +2,7 @@
   "id": "standee-portrait",
   "title": "Standee Portrait",
   "description": "Muestra el retrato del personaje como una figura recortada (standee) que sobresale de la ficha, con una imagen de fondo tipo bandera detrás, totalmente ajustable en tamaño, posición y opacidad. Funciona con cualquier sistema de juego.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "authors": [
     {
       "name": "Manu Romera",

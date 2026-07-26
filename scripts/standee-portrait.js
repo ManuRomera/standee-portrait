@@ -202,15 +202,22 @@ function getWindowContent(htmlArg) {
   const el = htmlArg instanceof HTMLElement ? htmlArg : htmlArg?.[0];
   if (!el) return null;
   if (el.classList?.contains("window-content")) return el;
-  return el.closest?.(".window-content") ?? el.parentElement ?? null;
+  // ApplicationV2 hooks pass the outer .application element; window-content is a descendant.
+  const descendant = el.querySelector?.(".window-content");
+  if (descendant) return descendant;
+  // Application V1 hooks pass the inner content, already attached under window-content.
+  return el.closest?.(".window-content") ?? null;
 }
 
 function onRenderActorSheet(app, htmlArg) {
-  const actor = app.document ?? app.actor;
+  const actor = app.document ?? app.actor ?? app.object;
   if (!actor || actor.documentName !== "Actor") return;
 
   const windowContent = getWindowContent(htmlArg);
-  if (!windowContent) return;
+  if (!windowContent) {
+    console.warn(`${MODULE_ID} | No se encontró .window-content para la hoja de ${actor.name}; se omite el panel.`);
+    return;
+  }
 
   const cfg = getConfig(actor);
   const editable = !!app.isEditable;
@@ -245,5 +252,15 @@ function onRenderActorSheet(app, htmlArg) {
   attachListeners(app, actor, windowContent, tab, panel, cfg);
 }
 
-Hooks.on("renderActorSheet", onRenderActorSheet);
-Hooks.on("renderActorSheetV2", onRenderActorSheet);
+function safeOnRender(app, htmlArg) {
+  try {
+    onRenderActorSheet(app, htmlArg);
+  } catch (err) {
+    console.error(`${MODULE_ID} | Error al renderizar el panel standee`, err);
+  }
+}
+
+// Universal render hooks: fire for every Application/ApplicationV2 subclass, regardless of
+// which intermediate sheet class a given system's actor sheet actually extends.
+Hooks.on("renderApplication", safeOnRender);
+Hooks.on("renderApplicationV2", safeOnRender);
