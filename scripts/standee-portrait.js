@@ -237,9 +237,26 @@ function getWindowContent(htmlArg) {
   return el.closest?.(".window-content") ?? null;
 }
 
+function resolveActor(app) {
+  // Covers the vast majority of systems: DocumentSheet(V2) exposes `.document`, classic
+  // ActorSheet exposes `.actor`, and any FormApplication exposes the underlying `.object`.
+  const direct = app.document ?? app.actor ?? app.object;
+  if (direct instanceof Actor) return direct;
+
+  // Some lightweight/indie systems build their sheet without exposing any of the above
+  // (custom Application subclasses). Fall back to Foundry's own reverse index: every
+  // Document registers each Application currently rendering it into `document.apps` by
+  // that app's id, regardless of how the system's sheet class stores the reference.
+  const candidates = [
+    ...game.actors.contents,
+    ...(canvas?.scene?.tokens?.contents.map((t) => t.actor).filter(Boolean) ?? [])
+  ];
+  return candidates.find((a) => a.apps?.[app.appId] === app) ?? null;
+}
+
 function onRenderActorSheet(app, htmlArg) {
-  const actor = app.document ?? app.actor ?? app.object;
-  if (!actor || actor.documentName !== "Actor") return;
+  const actor = resolveActor(app);
+  if (!actor) return;
 
   const windowContent = getWindowContent(htmlArg);
   if (!windowContent) {
