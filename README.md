@@ -36,6 +36,14 @@ La imagen en sí (retrato + bandera) no tiene ningún botón encima: es solo el 
 
 Todos los ajustes se guardan como flags del propio actor (`flags.standee-portrait.config`), así que son independientes por personaje y persisten entre sesiones. Los jugadores sin permisos de edición ven el resultado, pero solo el propietario (o el GM) puede modificarlo.
 
+## Ayuda dentro del juego
+
+El módulo genera automáticamente una entrada de diario ("Standee Portrait — Ayuda" / "— Help") con todo esto explicado, visible tanto para el GM como para los jugadores (permiso de solo lectura). La primera vez que se carga el mundo con el módulo activo, se envía un único mensaje de chat público con un enlace a esa página — no vuelve a repetirse. El botón **❓** del hub la reabre en cualquier momento.
+
+## Idioma
+
+La interfaz está disponible en **español** e **inglés**, y se selecciona automáticamente según el idioma configurado en Foundry (Configuración > Idioma), igual que cualquier otro módulo o sistema — usa `lang/es.json` o `lang/en.json` según corresponda. La entrada de diario de ayuda también se genera en el idioma activo en el momento de crearla.
+
 ## Compatibilidad
 
 - Foundry VTT v12 y v13.

@@ -143,8 +143,9 @@ function buildPanelHTML(actor, cfg) {
   </div>`;
 }
 
-// Small, always-inside-the-window control cluster: one button when off (enable), a second
-// (gear) appears once enabled. Right-click-drag anywhere to relocate it (see attachDrag).
+// Small, always-inside-the-window control cluster: toggle + help are always there (help works
+// for players too, who can't edit anything), gear appears once enabled. Right-click-drag
+// anywhere on it to relocate it (see attachDrag).
 function buildHubHTML(cfg, editable) {
   const L = (k) => game.i18n.localize(k);
   return `
@@ -156,6 +157,7 @@ function buildHubHTML(cfg, editable) {
       ? `<button type="button" class="sp-btn sp-gear" title="${L("SP.Settings")}"><i class="fa-solid fa-sliders"></i></button>`
       : ""
   }
+  <button type="button" class="sp-btn sp-help" title="${L("SP.Help")}"><i class="fa-solid fa-circle-question"></i></button>
   ${cfg.enabled && editable ? buildSettingsHTML(cfg) : ""}`;
 }
 
@@ -250,6 +252,9 @@ function attachDrag(hub, actor, windowContent) {
 function attachListeners(app, actor, windowContent, hub, panel, cfg) {
   const toggleBtn = hub.querySelector(".sp-toggle");
   if (toggleBtn) toggleBtn.onclick = () => setConfig(actor, { enabled: !cfg.enabled });
+
+  const helpBtn = hub.querySelector(".sp-help");
+  if (helpBtn) helpBtn.onclick = () => openHelpJournal();
 
   attachDrag(hub, actor, windowContent);
 
@@ -379,7 +384,7 @@ function patchSheetRendering() {
           if (windowContent) onRenderActorSheet(this, this.object, windowContent);
         }
       } catch (err) {
-        console.error(`${MODULE_ID} | Error al renderizar el panel standee (V1)`, err);
+        console.error(`${MODULE_ID} | Error rendering the standee panel (V1)`, err);
       }
       return result;
     };
@@ -397,7 +402,7 @@ function patchSheetRendering() {
           if (windowContent) onRenderActorSheet(this, actor, windowContent);
         }
       } catch (err) {
-        console.error(`${MODULE_ID} | Error al renderizar el panel standee (V2)`, err);
+        console.error(`${MODULE_ID} | Error rendering the standee panel (V2)`, err);
       }
       return result;
     };
@@ -416,7 +421,7 @@ function wrapMethod(cls, method, after) {
       try {
         after(this);
       } catch (err) {
-        console.error(`${MODULE_ID} | Error en ${cls.name}.${method}`, err);
+        console.error(`${MODULE_ID} | Error in ${cls.name}.${method}`, err);
       }
     }
     return result;
@@ -440,7 +445,101 @@ function patchWindowTracking() {
   wrapMethod(AppV2, "close", removeOutsidePanel);
 }
 
+/* -------------------------------------------- */
+/* In-world help (journal entry + one-time chat ping) */
+/* -------------------------------------------- */
+
+const HELP_JOURNAL_FLAG = "helpJournal";
+
+function helpContentEs() {
+  return `
+  <p><em>Standee Portrait</em> muestra el retrato de cualquier ficha de personaje como una figura recortada a cuerpo entero, con una imagen de fondo tipo bandera detrás. Funciona con cualquier sistema de juego.</p>
+  <h2>El hub de control</h2>
+  <p>En cada ficha de actor aparece un pequeño grupo de botones (el "hub") dentro de la ventana. Vive siempre dentro de la ficha, nunca encima de la imagen.</p>
+  <ul>
+    <li><strong>Arrástralo</strong> manteniendo pulsado el <strong>botón derecho del ratón</strong> sobre él y moviendo el cursor, para colocarlo donde no moleste. La posición se guarda por personaje.</li>
+    <li><strong>🏳 Bandera:</strong> activa o desactiva el modo standee.</li>
+    <li><strong>⚙ Engranaje</strong> (solo visible cuando está activo y tienes permiso de edición): abre el panel de ajustes.</li>
+    <li><strong>❓ Ayuda:</strong> vuelve a abrir esta página, siempre disponible.</li>
+  </ul>
+  <h2>Panel de ajustes</h2>
+  <ul>
+    <li><strong>Posición:</strong> "Dentro de la ficha" integra la imagen en la propia ventana, ensanchándola. "Fuera, al lado" saca la imagen de la ventana por completo: flota junto a ella, la sigue si la mueves, y no se ve afectada por el fondo/skin propio de esa hoja.</li>
+    <li><strong>Imagen del standee:</strong> "Elegir imagen" usa una imagen distinta a la del retrato del personaje; "Usar el retrato del personaje" vuelve a \`actor.img\`. No modifica el retrato real del actor — ambas se conservan por separado.</li>
+    <li><strong>Bandera de fondo:</strong> "Elegir imagen" / "Quitar" gestionan la imagen que aparece detrás del standee.</li>
+    <li><strong>Ancho del panel:</strong> cuánto sitio ocupa la imagen.</li>
+    <li><strong>Zoom y posición del retrato / de la bandera:</strong> para encuadrar cada imagen dentro de su hueco.</li>
+    <li><strong>Opacidad de la bandera.</strong></li>
+  </ul>
+  <h2>Importante: qué imagen usar</h2>
+  <p>Tanto el retrato como la bandera se muestran sin caja ni marco, sobre fondo transparente. El resultado solo se ve "recortado" si la imagen ya tiene fondo transparente (PNG con alpha), como el arte de token. Con una imagen rectangular normal (fondo sólido) verás ese rectángulo completo — el módulo no recorta el sujeto automáticamente.</p>
+  <p><em>Módulo en desarrollo activo (WIP). Si algo falla, repórtalo en <a href="https://github.com/ManuRomera/standee-portrait/issues">GitHub</a>.</em></p>`;
+}
+
+function helpContentEn() {
+  return `
+  <p><em>Standee Portrait</em> shows any character sheet's portrait as a full-body cutout standee, with a background flag image behind it. Works with any game system.</p>
+  <h2>The control hub</h2>
+  <p>Every actor sheet gets a small button cluster (the "hub") inside the window. It always lives inside the sheet, never on top of the artwork.</p>
+  <ul>
+    <li><strong>Drag it</strong> by holding down the <strong>right mouse button</strong> on it and moving the cursor, to put it somewhere out of the way. Its position is saved per character.</li>
+    <li><strong>🏳 Flag:</strong> turns standee mode on or off.</li>
+    <li><strong>⚙ Gear</strong> (only visible once enabled, if you can edit the actor): opens the settings panel.</li>
+    <li><strong>❓ Help:</strong> reopens this page, always available.</li>
+  </ul>
+  <h2>Settings panel</h2>
+  <ul>
+    <li><strong>Position:</strong> "Inside the sheet" integrates the image into the window itself, widening it. "Outside, next to it" takes the image out of the window entirely: it floats beside it, follows it when moved, and isn't affected by that sheet's own background/skin.</li>
+    <li><strong>Standee image:</strong> "Choose image" uses a different image than the character's portrait; "Use character portrait" goes back to \`actor.img\`. This never modifies the actor's real portrait — both are kept separately.</li>
+    <li><strong>Background flag:</strong> "Choose image" / "Clear" manage the image behind the standee.</li>
+    <li><strong>Panel width:</strong> how much room the image takes up.</li>
+    <li><strong>Portrait / flag zoom and position:</strong> to frame each image within its space.</li>
+    <li><strong>Flag opacity.</strong></li>
+  </ul>
+  <h2>Important: what image to use</h2>
+  <p>Both the portrait and the flag are shown with no box or frame, on a transparent background. The result only looks "cut out" if the image already has a transparent background (PNG with alpha), like token art. A regular rectangular image (solid background) will show as that full rectangle — the module doesn't crop the subject automatically.</p>
+  <p><em>This module is a work in progress (WIP). If something breaks, report it on <a href="https://github.com/ManuRomera/standee-portrait/issues">GitHub</a>.</em></p>`;
+}
+
+async function ensureHelpJournal() {
+  const existing = game.journal.find((j) => j.getFlag(MODULE_ID, HELP_JOURNAL_FLAG));
+  if (existing) return existing;
+
+  const spanish = game.i18n.lang?.startsWith("es");
+  const name = spanish ? "Standee Portrait — Ayuda" : "Standee Portrait — Help";
+  const content = spanish ? helpContentEs() : helpContentEn();
+
+  return JournalEntry.create({
+    name,
+    pages: [{ name, type: "text", text: { content, format: CONST.JOURNAL_ENTRY_PAGE_FORMATS.HTML } }],
+    ownership: { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER },
+    flags: { [MODULE_ID]: { [HELP_JOURNAL_FLAG]: true } }
+  });
+}
+
+function openHelpJournal() {
+  const journal = game.journal?.find((j) => j.getFlag(MODULE_ID, HELP_JOURNAL_FLAG));
+  if (journal) journal.sheet.render(true);
+  else ui.notifications.warn(game.i18n.localize("SP.HelpMissing"));
+}
+
+async function announceHelpOnce() {
+  if (!game.user.isGM) return;
+  try {
+    const journal = await ensureHelpJournal();
+    if (game.settings.get(MODULE_ID, "helpAnnounced")) return;
+    await game.settings.set(MODULE_ID, "helpAnnounced", true);
+    const link = `@UUID[${journal.uuid}]{${journal.name}}`;
+    await ChatMessage.create({ content: `<p>${game.i18n.format("SP.HelpAnnounce", { link })}</p>`, whisper: [] });
+  } catch (err) {
+    console.error(`${MODULE_ID} | Could not create/announce the help journal`, err);
+  }
+}
+
 Hooks.once("init", () => {
   patchSheetRendering();
   patchWindowTracking();
+  game.settings.register(MODULE_ID, "helpAnnounced", { scope: "world", config: false, type: Boolean, default: false });
 });
+
+Hooks.once("ready", () => announceHelpOnce());
