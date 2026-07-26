@@ -25,15 +25,13 @@ El retrato se muestra con `object-fit: contain` sobre fondo **transparente** (no
 En cada ficha de actor aparece una pequeña pestaña con un icono de bandera pegada al borde izquierdo de la ventana.
 
 1. **Pulsa la pestaña** para activar el modo standee. La ficha se ensancha y aparece un panel lateral con:
-   - la **bandera de fondo** (una imagen a pantalla completa del panel, en la capa de atrás),
-   - el **retrato del personaje** recortado a cuerpo entero encima, con fondo transparente si la imagen lo permite.
-2. Un botón de **engranaje** (⚙) abre el panel de ajustes, con controles deslizantes para regular:
-   - **Ancho del panel**: cuánto sobresale de la ficha.
-   - **Zoom y posición (horizontal/vertical) del retrato**: para encuadrar bien la figura.
-   - **Zoom, posición y opacidad de la bandera**: para ajustar la imagen de fondo.
-3. **Clic directo sobre el retrato** abre el selector de archivos para cambiar la imagen del actor.
-4. Los botones **"Elegir imagen" / "Quitar"** del panel de ajustes gestionan la imagen de la bandera de fondo.
-5. El botón **✕** de la esquina superior del panel vuelve al retrato normal (modo *framed*).
+   - la **bandera de fondo** (una imagen a pantalla completa del panel, en la capa de atrás), si la has puesto,
+   - la **imagen del standee** recortada a cuerpo entero encima, con fondo transparente si la imagen lo permite.
+2. Un botón de **engranaje** (⚙) abre el panel de ajustes, con:
+   - **Imagen del standee**: "Elegir imagen" para usar una imagen distinta a la del retrato del personaje, "Usar el retrato del personaje" para volver a mostrar `actor.img`. Este ajuste **no modifica** el retrato real del actor — ambas imágenes se conservan por separado; por defecto el standee usa el retrato del personaje, y si eliges otra, se muestra esa.
+   - **Bandera de fondo**: "Elegir imagen" / "Quitar" para gestionar la imagen de fondo.
+   - Controles deslizantes para **ancho del panel**, **zoom y posición del standee**, y **zoom, posición y opacidad de la bandera**.
+3. El botón **✕** de la esquina superior del panel vuelve al retrato normal (modo *framed*).
 
 Todos los ajustes se guardan como flags del propio actor (`flags.standee-portrait.config`), así que son independientes por personaje y persisten entre sesiones. Los jugadores sin permisos de edición ven el resultado, pero solo el propietario (o el GM) puede modificarlo.
 

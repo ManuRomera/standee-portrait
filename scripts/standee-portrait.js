@@ -3,6 +3,7 @@ const MODULE_ID = "standee-portrait";
 const DEFAULT_CONFIG = {
   enabled: false,
   panelWidth: 220,
+  portraitImg: null,
   flagImg: null,
   flagScale: 1,
   flagX: 0,
@@ -76,6 +77,13 @@ function buildSettingsHTML(cfg) {
   return `
   <div class="sp-settings-box">
     <div class="sp-field">
+      <label>${L("SP.PortraitImage")}</label>
+      <div class="sp-row">
+        <button type="button" class="sp-mini sp-pick-portrait">${L("SP.Choose")}</button>
+        <button type="button" class="sp-mini sp-clear-portrait">${L("SP.UseCharacterPortrait")}</button>
+      </div>
+    </div>
+    <div class="sp-field">
       <label>${L("SP.Flag")}</label>
       <div class="sp-row">
         <button type="button" class="sp-mini sp-pick-flag">${L("SP.Choose")}</button>
@@ -113,12 +121,13 @@ function buildSettingsHTML(cfg) {
 
 function buildPanelHTML(actor, cfg, editable) {
   const L = (k) => game.i18n.localize(k);
+  const portraitSrc = cfg.portraitImg || actor.img;
   return `
   <div class="sp-flag-frame">
     ${cfg.flagImg ? `<img src="${cfg.flagImg}">` : ""}
   </div>
   <div class="sp-portrait-frame">
-    <img src="${actor.img}">
+    <img src="${portraitSrc}">
   </div>
   <div class="sp-toolbar">
     <button type="button" class="sp-btn sp-toggle" title="${L("SP.ToggleOff")}"><i class="fa-solid fa-xmark"></i></button>
@@ -141,6 +150,16 @@ const LIVE_MAP = {
   flagOpacity: { sel: ".sp-flag-frame img", prop: "--sp-f-opacity", fmt: (v) => v }
 };
 
+// Cheap, drag-friendly preview: only touches CSS (panel width + the padding that reserves
+// its space), never the real Application frame. Used on every "input" tick while dragging.
+function previewPanelWidth(windowContent, panel, width) {
+  if (panel) panel.style.setProperty("--sp-panel-width", `${width}px`);
+  windowContent.style.paddingLeft = `${width}px`;
+}
+
+// Commits the real Application resize. Only called on full render and when a drag ends
+// ("change"), never on every "input" tick — resizing the actual window on every tick is what
+// caused the visible jitter, since the settings box itself lives inside that same window.
 function applyWidth(app, windowContent, panel, cfg) {
   app._sp ??= { originalWidth: app.position.width, appliedWidth: 0 };
   const desired = cfg.enabled ? cfg.panelWidth : 0;
@@ -149,8 +168,6 @@ function applyWidth(app, windowContent, panel, cfg) {
     app._sp.appliedWidth = desired;
     app.setPosition({ width: base + desired });
   }
-  // Reserve the panel's width so the sheet's own content moves out of the way instead
-  // of being covered by the (transparent, click-through) standee panel sitting on top.
   windowContent.style.paddingLeft = desired ? `${desired}px` : "";
   if (panel) panel.style.setProperty("--sp-panel-width", `${cfg.panelWidth}px`);
 }
@@ -167,12 +184,14 @@ function attachListeners(app, actor, windowContent, tab, panel, cfg) {
   const box = panel.querySelector(".sp-settings-box");
   if (gearBtn && box) gearBtn.onclick = () => box.classList.toggle("open");
 
-  const portraitImg = panel.querySelector(".sp-portrait-frame img");
-  if (portraitImg && app.isEditable) {
-    portraitImg.style.cursor = "pointer";
-    portraitImg.title = game.i18n.localize("SP.EditPortrait");
-    portraitImg.onclick = () => pickImage(actor.img, (path) => actor.update({ img: path }));
+  const pickPortraitBtn = panel.querySelector(".sp-pick-portrait");
+  if (pickPortraitBtn) {
+    pickPortraitBtn.onclick = () =>
+      pickImage(cfg.portraitImg || actor.img, (path) => setConfig(actor, { portraitImg: path }));
   }
+
+  const clearPortraitBtn = panel.querySelector(".sp-clear-portrait");
+  if (clearPortraitBtn) clearPortraitBtn.onclick = () => setConfig(actor, { portraitImg: null });
 
   const pickFlagBtn = panel.querySelector(".sp-pick-flag");
   if (pickFlagBtn) pickFlagBtn.onclick = () => pickImage(cfg.flagImg, (path) => setConfig(actor, { flagImg: path }));
@@ -187,13 +206,19 @@ function attachListeners(app, actor, windowContent, tab, panel, cfg) {
       if (input.dataset.pct) value = value / 100;
 
       if (key === "panelWidth") {
-        applyWidth(app, windowContent, panel, { ...cfg, panelWidth: value, enabled: true });
+        previewPanelWidth(windowContent, panel, value);
       } else {
         const target = panel.querySelector(LIVE_MAP[key].sel);
         if (target) target.style.setProperty(LIVE_MAP[key].prop, LIVE_MAP[key].fmt(value));
       }
       debouncedSetConfig(actor, key, value);
     });
+
+    if (input.dataset.cfg === "panelWidth") {
+      input.addEventListener("change", () => {
+        applyWidth(app, windowContent, panel, { ...cfg, panelWidth: Number(input.value), enabled: true });
+      });
+    }
   });
 }
 

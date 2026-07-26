@@ -78,7 +78,9 @@
 .sp-toolbar {
   position: absolute;
   top: 6px;
-  right: 6px;
+  /* Anchored to the panel's left edge, which never moves (only its width/right edge does),
+     so dragging the panel-width slider can't drag this out from under the cursor. */
+  left: 6px;
   z-index: 6;
   display: flex;
   gap: 4px;
@@ -106,9 +108,11 @@
   display: none;
   position: absolute;
   top: 40px;
-  right: 6px;
+  left: 6px;
   z-index: 6;
-  width: 190px;
+  /* Cap to the panel's current width (inherited custom property) minus its side margins, so
+     it can never spill out over the sheet's own content when the panel is narrow. */
+  width: min(190px, calc(var(--sp-panel-width, 220px) - 12px));
   max-height: calc(100% - 50px);
   overflow-y: auto;
   background: rgba(12, 12, 12, 0.94);
