@@ -33,8 +33,8 @@
   width: var(--sp-panel-width, 220px);
   z-index: 4;
   overflow: hidden;
-  background: #0a0a0a;
-  box-shadow: 4px 0 14px rgba(0, 0, 0, 0.45);
+  background: transparent;
+  pointer-events: none;
 }
 
 .sp-flag-frame,
@@ -42,11 +42,11 @@
   position: absolute;
   inset: 0;
   overflow: hidden;
+  background: transparent;
 }
 
 .sp-flag-frame {
   z-index: 1;
-  background: #111;
 }
 
 .sp-portrait-frame {
@@ -57,14 +57,22 @@
 .sp-portrait-frame img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
   display: block;
+  pointer-events: auto;
+}
+
+.sp-flag-frame img {
+  object-fit: cover;
+  opacity: var(--sp-f-opacity, 1);
   transform-origin: center;
   transform: translate(var(--sp-x, 0%), var(--sp-y, 0%)) scale(var(--sp-scale, 1));
 }
 
-.sp-flag-frame img {
-  opacity: var(--sp-f-opacity, 1);
+.sp-portrait-frame img {
+  object-fit: contain;
+  object-position: bottom center;
+  transform-origin: bottom center;
+  transform: translate(var(--sp-x, 0%), var(--sp-y, 0%)) scale(var(--sp-scale, 1));
 }
 
 .sp-toolbar {
@@ -74,6 +82,7 @@
   z-index: 6;
   display: flex;
   gap: 4px;
+  pointer-events: auto;
 }
 
 .sp-btn {
@@ -108,6 +117,7 @@
   padding: 8px;
   color: #f2eadb;
   font-size: 11px;
+  pointer-events: auto;
 }
 
 .sp-settings-box.open {

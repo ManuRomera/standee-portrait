@@ -149,6 +149,9 @@ function applyWidth(app, windowContent, panel, cfg) {
     app._sp.appliedWidth = desired;
     app.setPosition({ width: base + desired });
   }
+  // Reserve the panel's width so the sheet's own content moves out of the way instead
+  // of being covered by the (transparent, click-through) standee panel sitting on top.
+  windowContent.style.paddingLeft = desired ? `${desired}px` : "";
   if (panel) panel.style.setProperty("--sp-panel-width", `${cfg.panelWidth}px`);
 }
 

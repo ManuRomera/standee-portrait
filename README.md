@@ -16,6 +16,10 @@ https://github.com/ManuRomera/standee-portrait/releases/latest/download/module.j
 
 Luego actívalo en el mundo desde **Gestionar módulos**.
 
+## Importante: qué imagen usar
+
+El retrato se muestra con `object-fit: contain` sobre fondo **transparente** (no hay caja ni marco detrás). Esto significa que el resultado solo se ve "recortado y orgánico" si la imagen del personaje ya tiene el fondo transparente (PNG con alpha), como suele pasar con el arte de token. Si usas un retrato rectangular normal (una ilustración con fondo sólido), verás ese rectángulo completo flotando sobre la ficha — el módulo no recorta el sujeto automáticamente, solo respeta la transparencia que ya tenga el archivo.
+
 ## Cómo funciona
 
 En cada ficha de actor aparece una pequeña pestaña con un icono de bandera pegada al borde izquierdo de la ventana.
