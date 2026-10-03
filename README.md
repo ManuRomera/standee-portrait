@@ -1,3 +1,15 @@
+# ⚠️ Renombrado: ahora es [MR- Standee Portrait](https://github.com/ManuRomera/mr-standee-portrait)
+
+Este repositorio queda solo como **puente** (v1.9.0) para quien tenga instalado el módulo antiguo `standee-portrait`. Foundry trata un id nuevo como otro paquete, así que no puede actualizarse solo: instala **MR- Standee Portrait** con
+
+```
+https://github.com/ManuRomera/mr-standee-portrait/releases/latest/download/module.json
+```
+
+y desactiva/desinstala este. Los ajustes guardados en cada personaje se migran automáticamente al cargar el mundo (el GM).
+
+---
+
 # Standee Portrait
 
 > ⚠️ **WIP — Trabajo en curso.** Este módulo está en desarrollo activo. La funcionalidad básica ya funciona, pero puede haber cambios de comportamiento entre versiones y aún no está probado a fondo en todos los sistemas de juego. Úsalo en mundos de prueba antes de un mundo de partida activa, y abre un [issue](https://github.com/ManuRomera/standee-portrait/issues) si algo falla.

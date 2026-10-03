@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Zip module
-        run: zip -r module.zip module.json scripts styles lang README.md
+        run: zip -r module.zip module.json scripts README.md
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
