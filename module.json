@@ -2,7 +2,7 @@
   "id": "standee-portrait",
   "title": "Standee Portrait (RENOMBRADO → MR- Standee Portrait)",
   "description": "⚠️ Este módulo se ha renombrado a «MR- Standee Portrait» (id mr-standee-portrait) y esta versión ya no funciona: solo avisa. Instala el nuevo con https://github.com/ManuRomera/mr-standee-portrait/releases/latest/download/module.json — los ajustes de tus personajes se migran automáticamente.",
-  "version": "1.9.0",
+  "version": "1.9.1",
   "authors": [
     {
       "name": "Manu Romera",
@@ -21,14 +21,5 @@
   "download": "https://github.com/ManuRomera/standee-portrait/releases/latest/download/module.zip",
   "readme": "https://github.com/ManuRomera/standee-portrait#readme",
   "bugs": "https://github.com/ManuRomera/standee-portrait/issues",
-  "changelog": "https://github.com/ManuRomera/standee-portrait/releases",
-  "relationships": {
-    "requires": [
-      {
-        "id": "mr-standee-portrait",
-        "type": "module",
-        "manifest": "https://github.com/ManuRomera/mr-standee-portrait/releases/latest/download/module.json"
-      }
-    ]
-  }
+  "changelog": "https://github.com/ManuRomera/standee-portrait/releases"
 }

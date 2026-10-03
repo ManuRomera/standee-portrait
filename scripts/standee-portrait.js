@@ -6,9 +6,8 @@ const MANIFEST = "https://github.com/ManuRomera/mr-standee-portrait/releases/lat
 
 Hooks.once("ready", () => {
   if (!game.user.isGM) return;
-  const installed = game.modules.get(NEW_ID)?.active;
-  const msg = installed
-    ? "«Standee Portrait» es el módulo antiguo y ya no hace nada: desactívalo en Gestionar módulos (MR- Standee Portrait ya está activo). / Old module, now inert: disable it."
-    : `«Standee Portrait» se ha renombrado a «MR- Standee Portrait» y este módulo ya no funciona. Instala el nuevo desde Configuración > Módulos > Instalar módulo con este manifest: ${MANIFEST} — tus ajustes por personaje se migran solos. / Renamed to «MR- Standee Portrait»: install it with the manifest above; your per-character settings migrate automatically.`;
+  // With the new module active, it already warns about this old one — stay quiet.
+  if (game.modules.get(NEW_ID)?.active) return;
+  const msg = `«Standee Portrait» se ha renombrado a «MR- Standee Portrait» y este módulo ya no funciona. Instala el nuevo desde Configuración > Módulos > Instalar módulo con este manifest: ${MANIFEST} — tus ajustes por personaje se migran solos. / Renamed to «MR- Standee Portrait»: install it with the manifest above; your per-character settings migrate automatically.`;
   ui.notifications.warn(msg, { permanent: true });
 });
